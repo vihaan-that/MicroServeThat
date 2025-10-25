@@ -1,4 +1,4 @@
-package com.vihaanthat.microservices.order;
+package com.vihaanthat.microservices.inventory;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -12,7 +12,7 @@ class TestcontainersConfiguration {
 	@Bean
 	@ServiceConnection
 	MySQLContainer<?> mysqlContainer() {
-		return new MySQLContainer<>(DockerImageName.parse("mysql:8.3"));
+		return new MySQLContainer<>(DockerImageName.parse("mysql:latest"));
 	}
 
 }
