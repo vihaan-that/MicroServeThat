@@ -25,7 +25,7 @@ public class OrderService {
             var order = mapToOrder(orderRequest);
             orderRepository.save(order);
         } else {
-            throw new RuntimeException("Product with SkuCode" + orderRequest.skuCode() + " is not in stock");
+            throw new RuntimeException("Product " + orderRequest.skuCode() + " is not in stock");
         }
     }
     public static Order mapToOrder(OrderRequest orderRequest) {

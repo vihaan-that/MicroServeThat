@@ -3,25 +3,26 @@ package com.vihaanthat.microservices.order;
 import com.vihaanthat.microservices.order.stubs.InventoryClientStub;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.junit.Before;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.context.annotation.Import;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.containers.MySQLContainer;
-import org.hamcrest.Matchers;
-import static org.hamcrest.MatcherAssert.assertThat;
+
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWireMock(port = 0)
+@TestPropertySource(properties = {
+    "inventory.url=http://localhost:${wiremock.server.port}",
+    "spring.jpa.hibernate.ddl-auto=create-drop"
+})
 class OrderServiceApplicationTests {
     @ServiceConnection
-    static MySQLContainer mySQLContainer = new MySQLContainer("mysql:8.0.33");
+    static MySQLContainer<?> mySQLContainer = new MySQLContainer<>("mysql:8.0.33");
 
     @LocalServerPort
     private Integer port;
@@ -71,8 +72,9 @@ class OrderServiceApplicationTests {
                 }
                 """;
 
-        // Register the WireMock stub before making the request
-        InventoryClientStub.stubInventoryCall("iphone_13", 1000);
+        // Register the WireMock stub to return false for out of stock
+        InventoryClientStub.stubInventoryCallOutOfStock("iphone_13", 1000);
+
         var responseBodyString = RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body(submitOrderJson)
