@@ -6,8 +6,11 @@ import org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.web.servlet.function.HandlerFunction;
 import org.springframework.web.servlet.function.RequestPredicates;
 import org.springframework.web.servlet.function.RouterFunction;
+import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 
 import java.net.URI;
@@ -20,10 +23,43 @@ import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFuncti
 @Configuration
 public class Routes {
 
+    // Helper that delegates to the built-in http(...) handler, inspects the downstream status,
+    // and throws a RuntimeException when the response status is not 2xx. Throwing an exception
+    // ensures the circuit breaker filter treats the call as a failure and invokes the fallback.
+    private HandlerFunction<ServerResponse> httpWithStatusCheck(String uri) {
+        HandlerFunction<ServerResponse> delegate = http(uri);
+        return (ServerRequest request) -> {
+            ServerResponse resp = delegate.handle(request);
+            HttpStatusCode status = resp.statusCode();
+            if (!status.is2xxSuccessful()) {
+                throw new RuntimeException("Downstream returned non-2xx status: " + status.value());
+            }
+            return resp;
+        };
+    }
+
     @Bean
     public RouterFunction<ServerResponse> productServiceRoute() {
         return route("product_service")
-                .route(RequestPredicates.path("/api/product"), http("http://localhost:8080"))
+                // Match /api/product and /api/product/** (downstream-native paths)
+                .route(
+                        RequestPredicates.path("/api/product").or(RequestPredicates.path("/api/product/**")),
+                        // use wrapper so non-2xx results are turned into exceptions (and trigger fallback)
+                        httpWithStatusCheck("http://localhost:8080")
+                )
+                .filter(circuitBreaker("productServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    // Public-facing route: map /product and /product/** -> downstream /api/** so clients can use either path
+    @Bean
+    public RouterFunction<ServerResponse> productServicePublicRoute() {
+        return route("product_service_public")
+                .route(
+                        RequestPredicates.path("/product").or(RequestPredicates.path("/product/**")),
+                        // Forward to the downstream service with an /api prefix so /product/1 -> http://localhost:8080/api/product/1
+                        httpWithStatusCheck("http://localhost:8080/api")
+                )
                 .filter(circuitBreaker("productServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
                 .build();
     }
@@ -41,7 +77,7 @@ public class Routes {
     @Bean
     public RouterFunction<ServerResponse> orderServiceRoute() {
         return route("order_service")
-                .route(RequestPredicates.path("/api/order"), http("http://localhost:8081"))
+                .route(RequestPredicates.path("/api/order/**"), http("http://localhost:8081"))
                 .filter(circuitBreaker("orderServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
                 .build();
     }
@@ -58,7 +94,7 @@ public class Routes {
     @Bean
     public RouterFunction<ServerResponse> inventoryServiceRoute() {
         return route("inventory_service")
-                .route(RequestPredicates.path("/api/inventory"), http("http://localhost:8082"))
+                .route(RequestPredicates.path("/api/inventory/**"), http("http://localhost:8082"))
                 .filter(circuitBreaker("inventoryServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
                 .build();
     }

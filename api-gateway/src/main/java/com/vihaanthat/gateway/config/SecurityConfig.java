@@ -35,7 +35,16 @@ public class SecurityConfig {
             "/inventory-service/api-docs/**",
             "/product-service/swagger-ui/**",
             "/order-service/swagger-ui/**",
-            "/inventory-service/swagger-ui/**"
+            "/inventory-service/swagger-ui/**",
+            // Allow the internal fallback route to be forwarded to by the circuit breaker
+            "/fallbackRoute",
+            // Expose actuator for local debugging
+            "/actuator/**",
+            // Allow public product endpoints (both public and api-prefixed variants)
+            "/product",
+            "/product/**",
+            "/api/product",
+            "/api/product/**"
     };
 
     @Bean
