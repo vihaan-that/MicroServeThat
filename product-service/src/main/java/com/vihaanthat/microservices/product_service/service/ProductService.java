@@ -13,7 +13,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-
 public class ProductService {
     private final ProductRepository productRepository;
 
@@ -21,27 +20,22 @@ public class ProductService {
         Product product = Product.builder()
                 .name(productRequest.name())
                 .description(productRequest.description())
+                .skuCode(productRequest.skuCode())
                 .price(productRequest.price().doubleValue())
                 .build();
         productRepository.save(product);
-        log.info("Created product with id {}", product.getId());
-        return (new ProductResponse(
-                        product.getId(),
-                        product.getName(),
-                        product.getDescription(),
-                        java.math.BigDecimal.valueOf(product.getPrice())));
-
+        log.info("Product created successfully");
+        return new ProductResponse(product.getId(), product.getName(), product.getDescription(),
+                product.getSkuCode(),
+                java.math.BigDecimal.valueOf(product.getPrice()));
     }
-
 
     public List<ProductResponse> getAllProducts() {
         return productRepository.findAll()
                 .stream()
-                .map(product -> new ProductResponse(
-                        product.getId(),
-                        product.getName(),
-                        product.getDescription(),
-                        java.math.BigDecimal.valueOf(product.getPrice())
-                )).toList();
+                .map(product -> new ProductResponse(product.getId(), product.getName(), product.getDescription(),
+                        product.getSkuCode(),
+                        java.math.BigDecimal.valueOf(product.getPrice())))
+                .toList();
     }
 }
