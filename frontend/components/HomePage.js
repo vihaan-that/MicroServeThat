@@ -31,7 +31,6 @@ export default function HomePage() {
         setLoading(true)
         const accessToken = session?.accessToken || null
         const fetchedProducts = await getProducts(accessToken)
-        console.log('Fetched products:', fetchedProducts)
         setProducts(fetchedProducts)
       } catch (error) {
         console.error('Error fetching products:', error)
@@ -53,18 +52,16 @@ export default function HomePage() {
   const handleOrderProduct = async (product, productId) => {
     const quantity = quantityRefs.current[productId]?.value
 
-    console.log('Ordering product:', product)
-    console.log('Product ID:', productId)
-
     if (!session || !session.user) {
       console.error('User not authenticated')
       return
     }
 
-    // Check if product has a valid skuCode
-    if (!product.skuCode) {
-      alert('⚠️ This product cannot be ordered because it has no SKU Code.\n\nPlease create new products with valid SKU codes that match inventory entries.')
-      return
+    // Extract user details from session
+    const userDetails = {
+      email: session.user.email || '',
+      firstName: session.user.given_name || session.user.firstName || '',
+      lastName: session.user.family_name || session.user.lastName || '',
     }
 
     if (!quantity) {
@@ -74,14 +71,12 @@ export default function HomePage() {
       return
     }
 
-    // Create order matching backend OrderRequest DTO format
     const order = {
       skuCode: product.skuCode,
       price: product.price,
       quantity: Number(quantity),
+      userDetails: userDetails,
     }
-
-    console.log('Order object being sent:', order)
 
     try {
       await orderProduct(order, session.accessToken)
@@ -118,20 +113,6 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Warning banner for products without SKU codes */}
-        {!loading && products.some(p => !p.skuCode) && (
-          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
-            <p className="font-bold">⚠️ Warning: Some products cannot be ordered</p>
-            <p className="text-sm mt-1">
-              Products without SKU codes (highlighted in red) cannot be ordered.
-              Please create new products with valid SKU codes that match inventory entries:
-              <span className="font-mono text-xs block mt-1">
-                iphone_13, iphone_13_red, samsung_galaxy_s21, etc.
-              </span>
-            </p>
-          </div>
-        )}
-
         {loading ? (
           <p className="text-gray-500">Loading products...</p>
         ) : products.length > 0 ? (
@@ -149,49 +130,34 @@ export default function HomePage() {
             )}
 
             <ul className="list-disc list-inside">
-              {products.map((product) => {
-                const hasValidSkuCode = product.skuCode && product.skuCode.trim() !== ''
-                return (
-                  <li
-                    key={product.id}
-                    className={`mb-2 p-4 rounded-lg shadow-sm flex justify-between items-center ${
-                      hasValidSkuCode ? 'bg-gray-100' : 'bg-red-50 border-2 border-red-300'
-                    }`}
+              {products.map((product) => (
+                <li
+                  key={product.id}
+                  className="mb-2 p-4 bg-gray-100 rounded-lg shadow-sm flex justify-between items-center"
+                >
+                  <div>
+                    <span className="font-semibold">{product.name}</span> -
+                    <span className="text-gray-600"> Price: {product.price}</span>
+                    <br />
+                    <span>
+                      Quantity:{' '}
+                      <input
+                        type="number"
+                        min="1"
+                        ref={(el) => (quantityRefs.current[product.id] = el)}
+                        className="border border-gray-300 rounded px-2 py-1 w-20"
+                      />
+                    </span>
+                    <br />
+                  </div>
+                  <button
+                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 ml-4"
+                    onClick={() => handleOrderProduct(product, product.id)}
                   >
-                    <div className="flex-1">
-                      <span className="font-semibold">{product.name}</span> -
-                      <span className="text-gray-600"> Price: ${product.price}</span>
-                      <br />
-                      <span className={`text-sm ${hasValidSkuCode ? 'text-gray-500' : 'text-red-600 font-bold'}`}>
-                        SKU: {product.skuCode || '⚠️ MISSING - Cannot order this product'}
-                      </span>
-                      <br />
-                      {hasValidSkuCode && (
-                        <span>
-                          Quantity:{' '}
-                          <input
-                            type="number"
-                            min="1"
-                            ref={(el) => (quantityRefs.current[product.id] = el)}
-                            className="border border-gray-300 rounded px-2 py-1 w-20"
-                          />
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      className={`px-4 py-2 rounded-lg ml-4 ${
-                        hasValidSkuCode
-                          ? 'bg-green-500 text-white hover:bg-green-600'
-                          : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                      }`}
-                      onClick={() => handleOrderProduct(product, product.id)}
-                      disabled={!hasValidSkuCode}
-                    >
-                      {hasValidSkuCode ? 'Order Now' : 'No SKU'}
-                    </button>
-                  </li>
-                )
-              })}
+                    Order Now
+                  </button>
+                </li>
+              ))}
             </ul>
 
             {products.length === 100 && (
