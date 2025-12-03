@@ -102,6 +102,17 @@
                                 <artifactId>lombok</artifactId>
                             </exclude>
                         </excludes>
+                        <image>
+                            <builder>paketobuildpacks/builder-jammy-tiny</builder>
+                            <name>${env.DOCKER_USERNAME}/${project.artifactId}</name>
+                            <publish>true</publish>
+                        </image>
+                        <docker>
+                            <publishRegistry>
+                                <username>${env.DOCKER_USERNAME}</username>
+                                <password>${docker.password}</password>
+                            </publishRegistry>
+                        </docker>
                     </configuration>
                 </plugin>
                 <plugin>
