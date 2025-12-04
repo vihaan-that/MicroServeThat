@@ -61,6 +61,32 @@ This prevents cascading failures when downstream services are unavailable.
 
 ---
 
+## Grafana Dashboards
+
+The observability stack includes pre-configured Grafana dashboards for monitoring all microservices.
+
+### Prometheus Metrics Explorer
+
+![Grafana Prometheus Explore](./diagrams/grafana-prometheus-explore.png)
+
+The **Explore** view allows you to query Prometheus metrics directly:
+- `scrape_duration_seconds` - Time taken to scrape metrics from each service
+- Filter by application: `api-gateway`, `product-service`, `order-service`, `inventory-service`, `notification-service`
+- Visualize metrics as graphs, tables, or heatmaps
+
+### Spring Boot Statistics Dashboard
+
+![Grafana Spring Boot Dashboard](./diagrams/grafana-spring-boot-dashboard.png)
+
+The **Spring Boot Statistics** dashboard provides JVM and application metrics:
+- **Basic Statistics**: Uptime, Start time
+- **Memory**: Heap Used, Non-Heap Used, Memory Pool statistics
+- **CPU**: CPU Usage, Load Average
+- **JVM Statistics**: Classes loaded/unloaded, GC metrics
+- Filter by Instance, Application, and HikariCP Pool
+
+---
+
 ## Services Overview
 
 | Service | Description | Database | Port |
