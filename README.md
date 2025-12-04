@@ -21,6 +21,46 @@ The architecture follows a microservices pattern with:
 
 ---
 
+## Data Flow Diagram
+
+![Data Flow Diagram](./diagrams/data-flow-diagram.png)
+
+This diagram shows the complete data flow through the system:
+- **Synchronous communication** (REST) between API Gateway and backend services
+- **Asynchronous communication** (Kafka) for order notifications
+- **Database per service** pattern with MongoDB and MySQL
+- **Observability** data flowing to Prometheus, Grafana, Tempo, and Loki
+
+---
+
+## Order Process Flow
+
+![Order Process Flow](./diagrams/order-process-flow.png)
+
+The swimlane diagram illustrates the step-by-step order placement process:
+1. User clicks "Order Now" on the frontend
+2. Request flows through API Gateway (JWT validation)
+3. Order Service receives the request
+4. **Sync call** to Inventory Service to check stock
+5. If in stock → Save order to MySQL → Publish `OrderPlacedEvent` to Kafka
+6. **Async path**: Notification Service consumes event and sends confirmation email
+7. Response flows back to user
+
+---
+
+## Circuit Breaker Pattern
+
+![Circuit Breaker Pattern](./diagrams/circuit-breaker-pattern.png)
+
+The application implements the **Circuit Breaker pattern** using Resilience4J:
+- **CLOSED** (Normal): Requests pass through, failures are counted
+- **OPEN** (Failing): Requests fail fast, fallback is returned
+- **HALF-OPEN** (Testing): Allows test requests to check if service recovered
+
+This prevents cascading failures when downstream services are unavailable.
+
+---
+
 ## Services Overview
 
 | Service | Description | Database | Port |
