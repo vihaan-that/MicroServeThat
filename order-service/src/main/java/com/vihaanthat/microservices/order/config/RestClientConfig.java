@@ -1,6 +1,7 @@
 package com.vihaanthat.microservices.order.config;
 
 import com.vihaanthat.microservices.order.client.InventoryClient;
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,10 +20,11 @@ public class RestClientConfig {
     private String inventoryServiceUrl;
 
     @Bean
-    public InventoryClient inventoryClient() {
+    public InventoryClient inventoryClient(ObservationRegistry observationRegistry) {
         RestClient restClient = RestClient.builder()
                 .baseUrl(inventoryServiceUrl)
                 .requestFactory(getClientRequestFactory())
+                .observationRegistry(observationRegistry)
                 .build();
         var restClientAdapter = RestClientAdapter.create(restClient);
         var httpServiceProxyFactory = HttpServiceProxyFactory.builderFor(restClientAdapter).build();
